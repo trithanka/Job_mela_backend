@@ -1,5 +1,5 @@
 const express=require("express");
-const { registerCanditate, getByNumber, updateCandidate, getAllCandidate, master, asdmTrained, appliedJob,portalCan} = require("../../controllers/cCandidate/candidateController");
+const { registerCanditate, getByNumber, updateCandidate, getAllCandidate, master, appliedJob,portalCan,getAsdmCandidate} = require("../../controllers/cCandidate/candidateController");
 const registerValidator = require("../../validator/candidateRegisterValidator/candidateRegisterValidator");
 const updateCandidateValidator = require("../../validator/candidateRegisterValidator/updateCandidateValidator");
 const {verifyToken,authorizeRole} = require("../../../utils/jwtValidator");
@@ -14,6 +14,9 @@ router.get("/getall",getAllCandidate);
 
 //asdm candidate.
 // router.post("/asdmTrained",asdmTrained);
+
+//get asdm candidate by phone number.
+router.post("/asdm",getAsdmCandidate)
 
 //jobportal candidate.
 router.post("/portalCan",portalCan);

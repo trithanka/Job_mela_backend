@@ -123,7 +123,57 @@ WHERE
     // addCandidateEdu:`INSERT INTO nw_jpms_candidate_edu_details (fklCandidateId,dtCreatedAt,fklQualificationId)
     // VALUES(?,CURDATE(),?)`,
     // addCandidateAdd:`INSERT INTO nw_jpms_candidate_details (fklCandidateId,vsPermanentAddress,vsPermanentDistrict,vsPermanentState) VALUES(?,?,?,?)`,
-
+    getAsdmAddresses: `
+    SELECT 
+        addressCan.vsAddressType as addressType,
+        district.vsDistrictName as district,
+        state.vsStateName as state,
+        addressCan.vsPinCode as pin,
+        addressCan.vsCityName as city,
+        addressCan.vsPostOffice as postOffice,
+        addressCan.vsPoliceStation as policeStation,
+        const.vsConstituencyName as loksabha,
+        asse.vsConstituencyName as assemble
+    FROM 
+        nw_candidate_address_dtl addressCan
+    LEFT JOIN 
+        nw_mams_district district ON addressCan.fklDistrictId = district.pklDistrictId
+    LEFT JOIN 
+        nw_mams_state state ON addressCan.fklStateId = state.pklStateId
+    LEFT JOIN 
+        nw_mams_constituency_loksabha const ON addressCan.fklLoksabhaConstituencyId = const.pklLoksabhaConstituencyId
+    LEFT JOIN 
+        nw_mams_constituency_assembly asse ON addressCan.fklAssemblyConstituencyId = asse.pklAssemblyConstituencyId
+    WHERE 
+        addressCan.fklCandidateId = ?`,
+    getAsdmCandidateData: `
+    SELECT 
+        basic.vsFirstName as firstName,
+        basic.vsMiddleName as middleName,
+        basic.vsLastName as lastName,
+        basic.dtDOB as dob,
+        basic.vsGender as gender,
+        religion.vsReligionName as religion,
+        caste.vsCasteName as caste,
+        qual.vsQualification as qualification,
+        contact.vsPrimaryMobileNo as mobile,
+        basic.pklCandidateId
+    FROM 
+        nw_candidate_basic_dtl basic
+    LEFT JOIN 
+        nw_mams_religion religion ON basic.fklRelegionId = religion.pklReligionId
+    LEFT JOIN 
+        nw_candidate_caste_dtl candidateCaste ON candidateCaste.fklCandidateId = basic.pklCandidateId 
+    LEFT JOIN 
+        nw_mams_caste caste ON candidateCaste.fklCasteCategoryId = caste.pklCasteId
+    LEFT JOIN 
+        nw_candidate_qualification_dtl candidateQual ON candidateQual.fklCandidateId = basic.pklCandidateId
+    LEFT JOIN 
+        nw_mams_qualification qual ON qual.pklQualificationId = candidateQual.fklQualificationId
+    LEFT JOIN 
+        nw_candidate_contact_dtl contact ON contact.fklCandidateId = basic.pklCandidateId
+    WHERE 
+        contact.vsPrimaryMobileNo = ?`,
     checkCandidatePortal:`
     SELECT 
     SUBSTRING_INDEX(candidate.vsName, ' ', 1) AS firstName,

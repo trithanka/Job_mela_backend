@@ -457,7 +457,7 @@ const getByNumber = async (req, res) => {
     try {
         const candidateData = await connection.query(mysqlDB, Query.getCandidate, [contactNumber]);
         if (candidateData.length === 0) {
-            return res.status(404).json({ status: false, message: "Candidate not found" });
+            return res.status(404).json({ status: false, message: "Candidate Not found" });
         }
         res.status(200).json({ status: true, data: candidateData });
     } catch (error) {
@@ -682,5 +682,43 @@ const master=async(req,res)=>{
 
 }
 
+//get asdm candidate by phone number.
+const getAsdmCandidate = async (req, res) => {
+    let mysqlDB;
+    try {
+        mysqlDB = await connection.getDB();
+        if (!mysqlDB) {
+            return res.status(500).json({ status: false, message: "Error connecting to db" });
+        }
+    } catch (error) {
+        return res.status(500).json({ status: false, message: "Error connecting to db", error: error.message });
+    }
+    const { contactNumber } = req.body;
+    console.log(contactNumber);
+    try {
+        // Get basic candidate info using new query
+        const basicInfo = await connection.query(mysqlDB, Query.getAsdmCandidateData, [contactNumber]); 
+        if (basicInfo.length === 0) {
+            return res.status(404).json({ status: false, message: "Candidate Not found" });
+        }
 
-module.exports = { registerCanditate, getByNumber, updateCandidate, getAllCandidate,master,asdmTrained,appliedJob, portalCan}
+        // Get addresses for the candidate
+        const addresses = await connection.query(mysqlDB, Query.getAsdmAddresses, [basicInfo[0].pklCandidateId]);
+
+        // Combine the results
+        const response = {
+            ...basicInfo[0],
+            addresses: addresses
+        };
+
+        res.status(200).json({ status: true, data: response });
+    } catch (error) {
+        res.status(500).json({ status: false, message: "Internal Server Error", error: error.message });
+    } finally {
+        if (mysqlDB) mysqlDB.release();
+    }
+}
+
+
+module.exports = { registerCanditate, getByNumber, updateCandidate, getAllCandidate,master,asdmTrained,appliedJob, 
+    portalCan,getAsdmCandidate}

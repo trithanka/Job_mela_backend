@@ -12,7 +12,8 @@ const Query={
     addCandidate:`INSERT INTO nw_jobmela_candidate_dtl 
     (candidate_id, full_name, contact_number, email, fklqualificationId, dob, area, city, state, pin_code, registration_date,isAsdmTrained,fklmela_no,fklCandidateId) 
     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-
+    checkCandidateApply:`SELECT COUNT(*) as count FROM ds.nw_jobmela_applicant_dtl WHERE fklCandidateId = ? AND fklJobId = ?`,
+    insertCandidateApply:`INSERT INTO ds.nw_jobmela_applicant_dtl (fklCandidateId, fklMelaId, fklJobId, fklEmployerId, dtCreatedDate) VALUES (?, ?, ?, ?, NOW())`,
     addCandidateAsdm:`INSERT INTO nw_jobmela_candidate_dtl 
     (candidate_id, full_name, contact_number, email, fklqualificationId, dob, area, city, state, pin_code, registration_date,isAsdmTrained,fklmela_no,fklCandidateId) 
     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -313,13 +314,26 @@ GROUP BY registration_no;`,
     rejectedCandidate:`select count(distinct candidate_id) as rejectedCandidate from ds.nw_jobmela_candidate_apply where status="REJECTED";`,
     qualification:`SELECT pklQualificationId,vsQualification FROM ds.nw_mams_qualification where pklQualificationId<9`,
 
-    mela:`SELECT sl_no, venue_name 
+    mela:`SELECT pklMelaId as sl_no, vsVenueName as venue_name 
         FROM nw_jobmela_mela_dtl 
-        WHERE end_date > CURDATE() and is_active=1 ;`,
+        WHERE bActive = 1 AND (dtEndDate > CURDATE() OR dtEndDate IS NULL);`,
 
-    melaInfo:`SELECT sl_no, venue_name ,start_date ,end_date ,district, address
-        FROM nw_jobmela_mela_dtl 
-        WHERE is_active=1 AND end_date > CURDATE() OR end_date IS NULL;`,
+    melaInfo:`SELECT 
+  pklMelaId AS melaId,
+  vsVenueName AS venueName,
+  vsAddress AS address,
+  dtStartDate AS startDate,
+  dtEndDate AS endDate,
+  vsDistrict AS district,
+  bActive AS isActive,
+  iMaxCapacity AS maxCapacity,
+  dtSlotStartTime AS slotStartTime,
+  dtSlotEndTime AS slotEndTime,
+  dtCreatedAt AS createdAt,
+  dtUpdatedAt AS updatedAt,
+  vsDescription AS melaDesc
+FROM nw_jobmela_mela_dtl
+WHERE bActive = 1 AND (dtEndDate > CURDATE() OR dtEndDate IS NULL);`,
 
     state:`SELECT pklStateId,vsStateName FROM nw_mams_state;`,
     district:`SELECT pklDistrictId,fklStateId,vsDistrictName FROM nw_mams_district;`,

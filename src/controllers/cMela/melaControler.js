@@ -53,7 +53,7 @@ const getMelas = async (req, res) => {
             params.push(`%${venue_name}%`);
         }
 
-        const melaData = await connection.query(mysqlDB, query, params);
+        const melaData = await connection.query(mysqlDB, query.getMelas, params);
         let company;
         if(req.body){
             company=await connection.query(mysqlDB,QueryM.companyQ,[sl_no])
@@ -97,4 +97,34 @@ const updateMelaStatus = async (req, res) => {
     }
 };
 
-module.exports={addMela,getMelas,updateMelaStatus}
+//get mela by id
+const getMelaById = async (req, res) => {
+    const { melaId } = req.body;
+    if(!melaId){
+        return res.status(400).json({ status: false, message: "Mela ID is required" });
+    }
+    let mysqlDB;
+    try {
+        mysqlDB = await connection.getDB();
+        if (!mysqlDB) {
+            return res.status(500).json({ status: false, message: "Error connecting to db" });
+        }
+    } catch (error) {
+        return res.status(500).json({ status: false, message: "Error connecting to db", error: error.message });
+    }
+    try {
+        const mela = await connection.query(mysqlDB, QueryM.getMelas, [melaId]);
+        if (!mela) {
+            return res.status(404).send({ status: false, message: "Mela not found" });
+        }
+        const company=await connection.query(mysqlDB,QueryM.jobDetails,[melaId]);
+        res.status(200).json({ status: true, message: "Mela found", data: {mela,company} });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: false, message: "Internal Server Error", error: error.message });
+    }finally {
+        if (mysqlDB) mysqlDB.release();
+    }
+};
+
+module.exports={addMela,getMelas,updateMelaStatus,getMelaById}

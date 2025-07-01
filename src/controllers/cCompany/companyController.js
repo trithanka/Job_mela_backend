@@ -366,7 +366,7 @@ const getAllCompanies = async (req, res) => {
     if (!mysqlDB) {
         throw new Error("Error connecting to db");
     }
-    const {phone_no}=req.body
+    const {phone_no,district,qualification_id,fklmela_no,interview_mode}=req.body
     try {
         let companyData;
         let jobs;
@@ -396,7 +396,29 @@ const getAllCompanies = async (req, res) => {
             //     }))
             // };
         }else{
-            rows = await connection.query(mysqlDB, cQuery.getAllCompanies);
+            let query=cQuery.getAllCompanies
+            let params=[]
+            //filter by district
+            if(district){
+                query+=` and m.district = ?`;
+                params.push(district)
+            }
+            //filter by qualification
+            if(qualification_id){
+                query+=` and job.min_fklqualificationId = ?`;
+                params.push(qualification_id)
+            }
+            //filter by interview mode
+            if(interview_mode){
+                query+=` and job.vsSelectionProcedure = ?`;
+                params.push(interview_mode)
+            }
+            //filter by fklmela_no
+            if(fklmela_no){
+                query+=` and c.fklmela_no = ?`;
+                params.push(fklmela_no)
+            }
+            rows = await connection.query(mysqlDB, query,params);
             if (!rows || rows.length === 0) {
                 return res.status(404).json({ status: false, message: "No companies found" });
             }

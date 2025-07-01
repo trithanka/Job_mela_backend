@@ -16,7 +16,7 @@ router.post("/candidate",verifyToken,allCandidate)
 router.post("/company",verifyToken,allCompany)
 
 //get job detail by candidateId
-router.post("/eligibleJob",verifyToken,jobDetail)
+router.post("/eligibleJob",jobDetail)
 
 //apply job
 router.post("/jobApply",verifyToken,jobApply)

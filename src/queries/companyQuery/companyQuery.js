@@ -30,7 +30,7 @@ where vsPhoneNumber=? and isVarified=1`,
     c.address,
     c.fklmela_no,
     j.job_id,
-    mela.venue_name,
+    mela.vsVenueName as venue_name,
     mas.vsQualification as min_qualification,
     j.min_fklqualificationId,
     j.vacancy,
@@ -42,7 +42,7 @@ where vsPhoneNumber=? and isVarified=1`,
     join
         nw_mams_qualification mas on j.min_fklqualificationId=mas.pklQualificationId
 	join
-		nw_jobmela_mela_dtl mela on c.fklmela_no=mela.sl_no
+		nw_jobmela_mela_dtl mela on c.fklmela_no=mela.pklMelaId
     WHERE 
         c.sl_no =  ?;`,
     addJob:`INSERT INTO nw_jobmela_job_details (fkl_Company_slno, min_fklqualificationId, vacancy, post_name)
@@ -51,9 +51,14 @@ where vsPhoneNumber=? and isVarified=1`,
 
 
     getAllCompanies: `
-        SELECT c.*,m.venue_name FROM ds.nw_jobmela_company_dtl c
-left join
-	ds.nw_jobmela_mela_dtl m on c.fklmela_no=m.sl_no
+        SELECT c.*,m.vsVenueName as venue_name, emp.vsDescription as comDesc ,job.post_name, job.job_id, job.vacancy ,job.vsSelectionProcedure, qual.vsQualification,job.min_fklqualificationId
+        ,m.vsDistrict as district,m.dtStartDate as start_date,m.dtEndDate as end_date
+    FROM ds.nw_jobmela_company_dtl c
+	left join ds.nw_jobmela_mela_dtl m on c.fklmela_no=m.pklMelaId
+    left join nw_jpms_employers emp on c.fklEmployerId = emp.pklEmployerId
+    left join nw_jobmela_job_details job on c.sl_no = job.fkl_Company_slno
+    left join nw_mams_qualification qual on qual.pklQualificationId = job.min_fklqualificationId
+    where 1=1 
     `,
     getJobportal:`
     select 
@@ -82,9 +87,9 @@ left join
     jobDetails:`
     SELECT
     c.fklmela_no,
-    mela.venue_name,
-    mela.start_date,
-    mela.end_date,
+    mela.vsVenueName as venue_name,
+    mela.dtStartDate as start_date,
+    mela.dtEndDate as end_date,
     GROUP_CONCAT(
         CONCAT(
             '{',
@@ -104,11 +109,11 @@ LEFT JOIN
 JOIN
     nw_mams_qualification mas ON j.min_fklqualificationId = mas.pklQualificationId
 JOIN
-    nw_jobmela_mela_dtl mela ON c.fklmela_no = mela.sl_no
+    nw_jobmela_mela_dtl mela ON c.fklmela_no = mela.pklMelaId
 WHERE 
     c.phone_no = ?
 GROUP BY 
-    c.fklmela_no, mela.venue_name;
+    c.fklmela_no, mela.vsVenueName;
     `,
     // jobDetails:`
     // select
@@ -138,7 +143,7 @@ GROUP BY
     c.address,
     c.fklmela_no,
     j.job_id,
-    mela.venue_name,
+    mela.vsVenueName as venue_name,
     mas.vsQualification as min_qualification,
     j.min_fklqualificationId,
     j.vacancy,
@@ -150,7 +155,7 @@ GROUP BY
     join
         nw_mams_qualification mas on j.min_fklqualificationId=mas.pklQualificationId
 	join
-		nw_jobmela_mela_dtl mela on c.fklmela_no=mela.sl_no
+		nw_jobmela_mela_dtl mela on c.fklmela_no=mela.pklMelaId
     WHERE c.phone_no=?
     `,
     getbyRegNo:`SELECT c.company_name, c.registration_no, c.phone_no, c.email, c.address, 

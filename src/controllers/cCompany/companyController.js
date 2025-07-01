@@ -125,116 +125,188 @@ const loginCompany= async(req, res)=>{
 }
 
 //add company data
+// const addCompany = async (req, res) => {
+//     let mysqlDB;
+//     try {
+//         mysqlDB = await connection.getDB();
+//         if (!mysqlDB) {
+//             return res.status(500).json({ status: false, message: "Error connecting to db" });
+//         }
+
+//         const { company_name, registration_no, phone_no, email, address, jobs, fklmela_no,pklEmployerId} = req.body;
+
+//         // Input validation
+//         if (!company_name || !registration_no || !phone_no || !email || !address || !fklmela_no || !pklEmployerId) {
+//             return res.status(400).json({ status: false, message: "All fields are required" });
+//         }
+
+//         //check company for multiple meal registration
+//         const checkCompany=await connection.query(mysqlDB, cQuery.checkCom, [registration_no,fklmela_no]);
+//         if(checkCompany[0].count >0){
+//             return res.status(400).json({ status: false, message: "You are Already registered in this job mela" });
+//         }
+//         //check company if it verified
+//         // const checkVerified=await connection.query(mysqlDB, cQuery.checkVerified, [pklEmployerId,fklmela_no]);
+//         // if(checkVerified.length == 0){
+//         //     return res.status(400).json({ status: false, message: "Your Company is Not verified for the job mela" });
+//         // }
+
+//         // Start a transaction
+//         // await mysqlDB.beginTransaction();
+
+//         // Hash the password
+//         // const hashedPassword = await bcrypt.hash(password, 10);
+
+//         // Insert company data
+//         await connection.query(mysqlDB, cQuery.addCompany, [company_name, registration_no, phone_no, email, address, fklmela_no,pklEmployerId]);
+
+//         // Get the company sl no
+//         const com = await connection.query(mysqlDB, cQuery.com_sl, [registration_no, fklmela_no]);
+//         if (!com || com.length === 0) {
+//             throw new Error("Company not found after insertion");
+//         }
+//         // console.log(com.sl_no);
+//         const companySlNo = com[0].sl_no;
+
+//         // Insert job details
+//         if (Array.isArray(jobs) && jobs.length > 0) {
+//             for (let job of jobs) {
+//                 await connection.query(mysqlDB, cQuery.addJob, [companySlNo, job.minQualification, job.vacancy, job.postName]);
+//             }
+//         }
+
+//         // Commit the transaction
+//         // await mysqlDB.commit();
+
+//         // Get the company data which was just added
+//         const comData = await connection.query(mysqlDB, cQuery.comData, [companySlNo]);
+
+//         // Organize the data
+//         const companyData = {
+//             company_name: comData[0].company_name,
+//             company_slno: comData[0].sl_no,
+//             registration_no: comData[0].registration_no,
+//             phone_no: comData[0].phone_no,
+//             email: comData[0].email,
+//             address: comData[0].address,
+//             fklmela_no: comData[0].fklmela_no,
+//             venue_name: comData[0].venue_name,
+//             jobs: comData.filter(row => row.job_id).map(row => ({
+//                 job_id: row.job_id,
+//                 min_qualification: row.min_qualification,
+//                 min_fklqualificationId: row.min_fklqualificationId,
+//                 vacancy: row.vacancy,
+//                 post_name: row.post_name
+//             }))
+//         };
+
+//         // // Apply candidates to new jobs if they match the mela ID
+//         // const applyCandidatesQuery = `
+//         //     SELECT candidate_id, fklqualificationId
+//         //     FROM ds.nw_jobmela_candidate_dtl
+//         //     WHERE fklmela_no = ?;
+//         // `;
+        
+//         // const candidates = await connection.query(mysqlDB, applyCandidatesQuery, [fklmela_no]);
+        
+//         // if (candidates.length > 0) {
+//         //     for (const candidate of candidates) {
+//         //         await applyForJobs(candidate.candidate_id, candidate.fklqualificationId, res);
+//         //     }
+//         // }
+
+//         // Send response
+//         res.status(201).send({
+//             status: true,
+//             message: "Company and jobs added successfully",
+//             data: companyData
+//         });
+//     } catch (error) {
+//         // Rollback the transaction in case of an error
+//         if (mysqlDB) await mysqlDB.rollback();
+//         console.error(error);
+//         res.status(500).send({
+//             status: false,
+//             message: "Internal Server Error while adding company and jobs",
+//             error: error.message
+//         });
+//     } finally {
+//         if (mysqlDB) mysqlDB.release();
+//     }
+// };
 const addCompany = async (req, res) => {
     let mysqlDB;
     try {
-        mysqlDB = await connection.getDB();
-        if (!mysqlDB) {
-            return res.status(500).json({ status: false, message: "Error connecting to db" });
+      mysqlDB = await connection.getDB();
+      if (!mysqlDB) {
+        return res.status(500).json({ status: false, message: "Error connecting to db" });
+      }
+  
+      await connection.beginTransaction(mysqlDB);
+  
+      const { fklEmployerId, jobList } = req.body;
+      if (!fklEmployerId || !Array.isArray(jobList) || jobList.length === 0) {
+        await connection.rollback(mysqlDB);
+        return res.status(400).json({ status: false, message: "fklEmployerId and jobList are required" });
+      }
+      let insertedJobIds = [];
+      for (const job of jobList) {
+        const {
+          fklMinQalificationId,
+          iVacancy,
+          vsPostName,
+          iInterviewDurationMin,
+          dtInterviewStartTime,
+          dtInterviewEndTime,
+          participationDates,
+          vsSelectionProcedure
+        } = job;
+  
+        if (
+          !fklMinQalificationId ||
+          !iVacancy ||
+          !vsPostName ||
+          !iInterviewDurationMin ||
+          !dtInterviewStartTime ||
+          !dtInterviewEndTime ||
+          !Array.isArray(participationDates) ||
+          participationDates.length === 0 ||
+          !vsSelectionProcedure
+        ) {
+          throw new Error("Missing required job fields or participationDates");
         }
-
-        const { company_name, registration_no, phone_no, email, address, jobs, fklmela_no,pklEmployerId} = req.body;
-
-        // Input validation
-        if (!company_name || !registration_no || !phone_no || !email || !address || !fklmela_no || !pklEmployerId) {
-            return res.status(400).json({ status: false, message: "All fields are required" });
-        }
-
-        //check company for multiple meal registration
-        const checkCompany=await connection.query(mysqlDB, cQuery.checkCom, [registration_no,fklmela_no]);
-        if(checkCompany[0].count >0){
-            return res.status(400).json({ status: false, message: "You are Already registered in this job mela" });
-        }
-        //check company if it verified
-        // const checkVerified=await connection.query(mysqlDB, cQuery.checkVerified, [pklEmployerId,fklmela_no]);
-        // if(checkVerified.length == 0){
-        //     return res.status(400).json({ status: false, message: "Your Company is Not verified for the job mela" });
-        // }
-
-        // Start a transaction
-        // await mysqlDB.beginTransaction();
-
-        // Hash the password
-        // const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Insert company data
-        await connection.query(mysqlDB, cQuery.addCompany, [company_name, registration_no, phone_no, email, address, fklmela_no,pklEmployerId]);
-
-        // Get the company sl no
-        const com = await connection.query(mysqlDB, cQuery.com_sl, [registration_no, fklmela_no]);
-        if (!com || com.length === 0) {
-            throw new Error("Company not found after insertion");
-        }
-        // console.log(com.sl_no);
-        const companySlNo = com[0].sl_no;
-
-        // Insert job details
-        if (Array.isArray(jobs) && jobs.length > 0) {
-            for (let job of jobs) {
-                await connection.query(mysqlDB, cQuery.addJob, [companySlNo, job.minQualification, job.vacancy, job.postName]);
-            }
-        }
-
-        // Commit the transaction
-        // await mysqlDB.commit();
-
-        // Get the company data which was just added
-        const comData = await connection.query(mysqlDB, cQuery.comData, [companySlNo]);
-
-        // Organize the data
-        const companyData = {
-            company_name: comData[0].company_name,
-            company_slno: comData[0].sl_no,
-            registration_no: comData[0].registration_no,
-            phone_no: comData[0].phone_no,
-            email: comData[0].email,
-            address: comData[0].address,
-            fklmela_no: comData[0].fklmela_no,
-            venue_name: comData[0].venue_name,
-            jobs: comData.filter(row => row.job_id).map(row => ({
-                job_id: row.job_id,
-                min_qualification: row.min_qualification,
-                min_fklqualificationId: row.min_fklqualificationId,
-                vacancy: row.vacancy,
-                post_name: row.post_name
-            }))
-        };
-
-        // // Apply candidates to new jobs if they match the mela ID
-        // const applyCandidatesQuery = `
-        //     SELECT candidate_id, fklqualificationId
-        //     FROM ds.nw_jobmela_candidate_dtl
-        //     WHERE fklmela_no = ?;
-        // `;
+  
+        // Insert into nw_jobmela_job_dtl
         
-        // const candidates = await connection.query(mysqlDB, applyCandidatesQuery, [fklmela_no]);
-        
-        // if (candidates.length > 0) {
-        //     for (const candidate of candidates) {
-        //         await applyForJobs(candidate.candidate_id, candidate.fklqualificationId, res);
-        //     }
-        // }
-
-        // Send response
-        res.status(201).send({
-            status: true,
-            message: "Company and jobs added successfully",
-            data: companyData
-        });
+        const jobResult = await connection.query(mysqlDB, cQuery.insertJobQuery, [
+          fklEmployerId,
+          iVacancy,
+          vsPostName,
+          fklMinQalificationId,
+          iInterviewDurationMin,
+          dtInterviewStartTime,
+          dtInterviewEndTime,
+          vsSelectionProcedure
+        ]);
+        const pklJobId = jobResult.insertId;
+        insertedJobIds.push(pklJobId);
+        // Insert participation dates
+        for (const date of participationDates) {
+          await connection.query(mysqlDB, cQuery.insertParticipationQuery, [pklJobId, date]);
+        }
+      }
+  
+      await connection.commit(mysqlDB);
+      return res.status(201).json({ status: true, message: "Company jobs and participation dates added successfully", insertedJobIds });
     } catch (error) {
-        // Rollback the transaction in case of an error
-        if (mysqlDB) await mysqlDB.rollback();
-        console.error(error);
-        res.status(500).send({
-            status: false,
-            message: "Internal Server Error while adding company and jobs",
-            error: error.message
-        });
+      if (mysqlDB) {
+        try { await connection.rollback(mysqlDB); } catch (e) {}
+      }
+      return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
     } finally {
-        if (mysqlDB) mysqlDB.release();
+      if (mysqlDB) mysqlDB.release();
     }
-};
-
+  };
 //update company
 const updateCompany=async(req,res)=>{
     let mysqlDB;

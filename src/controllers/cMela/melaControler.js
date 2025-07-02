@@ -41,24 +41,21 @@ const getMelas = async (req, res) => {
     }
 
     try {
-        const { sl_no, venue_name } = req.body;
-        let query = QueryM.getMelas; // Default query
+        const { vsVenueName, vsDistrict } = req.body;
+        let query = QueryM.getAllMelas; // Default query
         const params = [];
 
-        if (sl_no) {
-            query += ' WHERE sl_no = ?';
-            params.push(sl_no);
-        } else if (venue_name) {
-            query += ' WHERE venue_name LIKE ?';
-            params.push(`%${venue_name}%`);
+        if (vsVenueName) {
+            query += ' and vsVenueName LIKE ?';
+            params.push(vsVenueName);
+        } else if (vsDistrict) {
+            query += ' and vsDistrict = ?';
+            params.push(vsDistrict);
         }
 
-        const melaData = await connection.query(mysqlDB, query.getMelas, params);
-        let company;
-        if(req.body){
-            company=await connection.query(mysqlDB,QueryM.companyQ,[sl_no])
-        }
-        res.status(200).json({ status: true, data: melaData, company:company });
+        const melaData = await connection.query(mysqlDB, query, params);
+
+        res.status(200).json({ status: true, data: melaData });
 
     } catch (error) {
         console.error(error);
@@ -99,11 +96,12 @@ const updateMelaStatus = async (req, res) => {
 
 //get mela by id
 const getMelaById = async (req, res) => {
-    const { melaId } = req.body;
-    if(!melaId){
+    const { pklMelaId ,pklCandidateId} = req.body;
+    if(!pklMelaId){
         return res.status(400).json({ status: false, message: "Mela ID is required" });
     }
     let mysqlDB;
+    let company;
     try {
         mysqlDB = await connection.getDB();
         if (!mysqlDB) {
@@ -113,11 +111,16 @@ const getMelaById = async (req, res) => {
         return res.status(500).json({ status: false, message: "Error connecting to db", error: error.message });
     }
     try {
-        const mela = await connection.query(mysqlDB, QueryM.getMelas, [melaId]);
+        const mela = await connection.query(mysqlDB, QueryM.getMelas, [pklMelaId]);
         if (!mela) {
             return res.status(404).send({ status: false, message: "Mela not found" });
         }
-        const company=await connection.query(mysqlDB,QueryM.jobDetails,[melaId]);
+        if(pklCandidateId){
+             company=await connection.query(mysqlDB,QueryM.candidateDetails,[pklCandidateId,pklCandidateId,pklMelaId]);
+        }
+        else{
+            company=await connection.query(mysqlDB,QueryM.jobDetails,[pklMelaId]);
+        }
         res.status(200).json({ status: true, message: "Mela found", data: {mela,company} });
     } catch (error) {
         console.error(error);

@@ -13,7 +13,7 @@ const router=express.Router();
 router.post("/add",authorizeRole("superAdmin"),addMelaValidator,addMela)
 
 // Route to get all melas
-router.get('/', getMelas);
+router.post('/getMelas', getMelas);
 
 //get mela by id
 router.post("/",getMelaById)

@@ -277,7 +277,7 @@ const addCompany = async (req, res) => {
         }
   
         // Insert into nw_jobmela_job_dtl
-        
+        //new line
         const jobResult = await connection.query(mysqlDB, cQuery.insertJobQuery, [
           fklEmployerId,
           iVacancy,

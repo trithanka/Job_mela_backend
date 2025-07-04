@@ -163,8 +163,8 @@ GROUP BY
     FROM ds.nw_jobmela_company_dtl c
     JOIN ds.nw_jobmela_job_details j ON c.registration_no = j.registration_no
     WHERE c.registration_no = ?;`,
-    insertJobQuery:`INSERT INTO nw_jobmela_job_dtl (fklEmployerId, iVacancy, vsPostName, fklMinQalificationId, iInterviewDurationMin, dtInterviewStartTime, dtInterviewEndTime,vsSelectionProcedure, dtCreatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?,?, NOW())`,
+    insertJobQuery:`INSERT INTO nw_jobmela_job_dtl (fklEmployerId, iVacancy, vsPostName, fklMinQalificationId, iInterviewDurationMin, dtInterviewStartTime, dtInterviewEndTime,vsSelectionProcedure, fklMelaId, dtCreatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?,?, ?, NOW())`,
     insertParticipationQuery:`INSERT INTO nw_jobmela_company_day_map (fklJobId, dtParticipationDate,dtCreatedAt)
     VALUES (?, ?, NOW())`
 };

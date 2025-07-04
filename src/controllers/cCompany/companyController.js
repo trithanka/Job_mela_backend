@@ -244,10 +244,10 @@ const addCompany = async (req, res) => {
   
       await connection.beginTransaction(mysqlDB);
   
-      const { fklEmployerId, jobList } = req.body;
-      if (!fklEmployerId || !Array.isArray(jobList) || jobList.length === 0) {
+      const { fklEmployerId,melaID, jobList } = req.body;
+      if (!fklEmployerId || !melaID || !Array.isArray(jobList) || jobList.length === 0) {
         await connection.rollback(mysqlDB);
-        return res.status(400).json({ status: false, message: "fklEmployerId and jobList are required" });
+        return res.status(400).json({ status: false, message: "fklEmployerId, melaID and jobList are required" });
       }
       let insertedJobIds = [];
       for (const job of jobList) {
@@ -286,7 +286,8 @@ const addCompany = async (req, res) => {
           iInterviewDurationMin,
           dtInterviewStartTime,
           dtInterviewEndTime,
-          vsSelectionProcedure
+          vsSelectionProcedure,
+          melaID
         ]);
         const pklJobId = jobResult.insertId;
         insertedJobIds.push(pklJobId);

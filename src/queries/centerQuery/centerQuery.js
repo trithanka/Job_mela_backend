@@ -32,39 +32,37 @@ const uQuery={
         where can.fklmela_no=?
     `,
     allCandidate:`
-        SELECT 
-            app.apply_id,
-            can.candidate_id,
-            can.full_name,
-            app.status,
-            can.contact_number,
-            q.vsQualification AS qualification,
-            can.registration_date,
-            can.email,
-            app.job_id,
-            job.post_name,
-            com.company_name,
-            com.registration_no,
-            app.application_date,
-            job.fkl_Company_slno,
-            m.venue_name,
-            m.sl_no
-        FROM 
-            nw_jobmela_candidate_dtl AS can
-        left JOIN 
-            nw_jobmela_candidate_apply AS app ON can.candidate_id = app.candidate_id
-        left JOIN 
-            nw_mams_qualification q ON can.fklqualificationId = q.pklQualificationId
-        left JOIN 
-            nw_jobmela_job_details AS job ON app.job_id = job.job_id
-       left JOIN 
-            nw_jobmela_company_dtl AS com ON job.fkl_Company_slno = com.sl_no
-        left join nw_jobmela_mela_dtl as m on can.fklmela_no=m.sl_no
-        where can.fklmela_no=? 
+        SELECT DISTINCT
+    basic.vsFirstName AS firstName,
+    basic.vsMiddleName AS middleName,
+    basic.vsLastName AS lastName,
+    basic.vsCertName as fullName,
+    basic.dtDOB AS dob,
+    basic.vsGender AS gender,
+    religion.vsReligionName AS religion,
+    caste.vsCasteName AS caste,
+    qual.vsQualification AS qualification,
+    contact.vsPrimaryMobileNo AS mobile,
+    basic.pklCandidateId AS candidateId,
+    job.fklMelaId AS fklmela_no,
+    mela.vsVenueName as melaName
+FROM nw_jobmela_applicant_dtl applicant
+INNER JOIN nw_jobmela_job_dtl job ON applicant.fklJobId = job.pklJobId
+INNER JOIN nw_candidate_basic_dtl basic ON applicant.fklCandidateId = basic.pklCandidateId
+LEFT JOIN nw_mams_religion religion ON basic.fklRelegionId = religion.pklReligionId
+LEFT JOIN nw_candidate_caste_dtl candidateCaste ON candidateCaste.fklCandidateId = basic.pklCandidateId 
+LEFT JOIN nw_mams_caste caste ON candidateCaste.fklCasteCategoryId = caste.pklCasteId
+LEFT JOIN nw_candidate_qualification_dtl candidateQual ON candidateQual.fklCandidateId = basic.pklCandidateId
+LEFT JOIN nw_mams_qualification qual ON qual.pklQualificationId = candidateQual.fklQualificationId
+LEFT JOIN nw_candidate_contact_dtl contact ON contact.fklCandidateId = basic.pklCandidateId
+LEFT JOIN nw_jobmela_mela_dtl mela ON job.fklMelaId= mela.pklMelaId
+
+WHERE contact.vsPrimaryMobileNo IS NOT NULL
+AND job.fklMelaId = ? 
         `,
-        mela:`select venue_name,start_date,end_date from nw_jobmela_mela_dtl where sl_no=?;`,
+        mela:`select vsVenueName,dtStartDate,dtStartDate,vsAddress from nw_jobmela_mela_dtl where pklMelaId=?;`,
         //total applicant in a mela
-        totalApplicant:`SELECT COUNT(*) as total FROM nw_jobmela_candidate_dtl where fklmela_no=? `,
+        totalApplicant:`SELECT COUNT(*) as total FROM nw_jobmela_applicant_dtl where fklMelaId=? `,
         melaCompanyjob:`SELECT c.company_name,c.registration_no,m.venue_name, job.post_name,job.vacancy,job.job_id FROM ds.nw_jobmela_company_dtl c
         left join
 	        ds.nw_jobmela_mela_dtl m on c.fklmela_no=m.sl_no

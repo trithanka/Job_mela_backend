@@ -1,6 +1,6 @@
 const express=require("express");
 const { loginUser, allCandidate, jobDetail, jobApply, allCompany } = require("../../controllers/cCenter/centerController");
-const { verifyToken } = require("../../../utils/jwtValidator");
+// const { verifyToken } = require("../../../utils/jwtValidator");
 
 const router=express.Router();
 
@@ -10,15 +10,15 @@ const router=express.Router();
 router.post("/login",loginUser)
 
 //all candidate
-router.post("/candidate",verifyToken,allCandidate)
+router.post("/candidate",allCandidate)
 
 //all company
-router.post("/company",verifyToken,allCompany)
+router.post("/company",allCompany)
 
 //get job detail by candidateId
 router.post("/eligibleJob",jobDetail)
 
 //apply job
-router.post("/jobApply",verifyToken,jobApply)
+router.post("/jobApply",jobApply)
 
 module.exports=router

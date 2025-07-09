@@ -92,57 +92,59 @@ const allCandidate=async(req,res)=>{
     } catch (error) {
         return res.status(500).json({ status: false, message: "Error connecting to db", error: error.message });
     }
-    const {candidate_id,company_name,full_name,registration_no,appliedCan}=req.body
+    const {candidate_id,company_name,full_name,registration_no,appliedCan,mela_id}=req.body
     try {
         //req.user.mela is the decoded token
-        const params = [req.user.mela];
+        // const params = [req.user.mela];
+        if(!mela_id){
+            return res.status(500).json({ status: false, message: "mela_id is required", error: "mela_id is required" });
+        }
         let query = uQuery.allCandidate;
-        
+        const params = [mela_id];
         if(appliedCan){
             query=uQuery.appliedCan
         }
-        if (company_name) {
-            query += ' and com.company_name LIKE ?';
-            params.push(`%${company_name}%`);
-        }
-        if (registration_no) {
-            query += ' and com.registration_no = ?';
-            params.push(registration_no);
-        }
-        if (candidate_id) {
-            console.log("inside");
-            query += ' and app.candidate_id = ?';
-            params.push(candidate_id);
-        }
+        // if (company_name) {
+        //     query += ' and com.company_name LIKE ?';
+        //     params.push(`%${company_name}%`);
+        // }
+        // if (registration_no) {
+        //     query += ' and com.registration_no = ?';
+        //     params.push(registration_no);
+        // }
+        // if (candidate_id) {
+        //     console.log("inside");
+        //     query += ' and app.candidate_id = ?';
+        //     params.push(candidate_id);
+        // }
         if (full_name) {
-            query += ' and can.full_name like ?';
-            params.push(full_name);
+            query += ' and basic.vsCertName like ?';
+             params.push(`%${full_name}%`);
         }
         // if (phone_no) {
         //     query += ' WHERE com.phone_no = ?';
         //     params.push(phone_no);
         // }
-        console.log(query);
-        console.log(params);
         //mela info
-        const mela = await connection.query(mysqlDB, uQuery.mela, [req.user.mela]);
+        const mela = await connection.query(mysqlDB, uQuery.mela, [mela_id]);
         const companyData = await connection.query(mysqlDB, query, params);
         //total applicant count
-        const totalApplicant= await connection.query(mysqlDB, uQuery.totalApplicant, [req.user.mela]);
-        //applied applicant
-        const appliedApplicant= await connection.query(mysqlDB, uQuery.appliedApplicant, [req.user.mela]);
+        const totalApplicant= await connection.query(mysqlDB, uQuery.totalApplicant, [mela_id]);
+        // //applied applicant
+        // const appliedApplicant= await connection.query(mysqlDB, uQuery.appliedApplicant, [req.user.mela]);
         
         return  res.status(201).send({
             status: true,
             message: "success",
             totalApplicant:totalApplicant[0].total,
-            appliedApplicant:appliedApplicant[0].total,
+            // appliedApplicant:appliedApplicant[0].total,
             mela:mela[0],
             data: companyData
         })
        
         
     } catch (error) {
+        console.error(error)
         return res.status(500).json({ status: false, message: "Internal Server Error contact", error: error.message });
     }finally {
         if (mysqlDB) mysqlDB.release();

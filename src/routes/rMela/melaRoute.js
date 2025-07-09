@@ -10,7 +10,7 @@ const router=express.Router();
 
 
 //add mela
-router.post("/add",authorizeRole("superAdmin"),addMelaValidator,addMela)
+router.post("/add",addMelaValidator,addMela)
 
 // Route to get all melas
 router.post('/getMelas', getMelas);
@@ -19,7 +19,7 @@ router.post('/getMelas', getMelas);
 router.post("/",getMelaById)
 
 // Route to update mela status
-router.post('/updateStatus/:slNo', authorizeRole("superAdmin"),updateMelaStatus);
+router.post('/updateStatus/:slNo',updateMelaStatus);
 
 
 

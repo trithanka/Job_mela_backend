@@ -69,10 +69,28 @@ AND job.fklMelaId = ?
 		left join 
 			nw_jobmela_job_details job on c.sl_no=fkl_Company_slno
             where c.fklmela_no=3`,
-        melaCompany:`SELECT c.*,m.venue_name FROM ds.nw_jobmela_company_dtl c
-        left join
-	        ds.nw_jobmela_mela_dtl m on c.fklmela_no=m.sl_no
-            where c.fklmela_no=?`,
+        melaCompany:`select distinct
+            entity.vsEntityName as companyName,
+            entity.pklEntityId,
+            entity.fklRoleId as roleId,
+            entity.vsEmail1 as companyEmail,
+            entity.vsMobile1 as companyMobile,
+            entity.fklOrganizationTypeId as organizationTypeId,
+            orgType.vsOrganizationTypeName as organizationTypeName,
+            login.vsLoginName as userName,
+            emp.fklEmployerType as empTypeId,
+            empType.vsEmployerType as empTypeName,
+            emp.vsArea as companyAddress,
+            emp.vsPINCode as companyPinCode,
+            emp.dtModifiedDate as createdAt,
+            jobmela.fklMelaid as melaId
+        from nw_enms_entity entity 
+        left join nw_mams_organization_type orgType on entity.fklOrganizationTypeId = orgType.pklOrganizationTypeId
+        left join nw_loms_login login on entity.fklLoginId = login.pklLoginId
+        left join nw_emms_employer_details emp on entity.pklEntityId = emp.fklENtityId
+        left join nw_mams_employer_type empType on emp.fklEmployerType = empType.pklEmployerId
+        inner join nw_jobmela_job_dtl jobmela on entity.pklEntityId = jobmela.fklEmployerId
+        where jobmela.fklMelaId =? `,
         appliedApplicant:`SELECT COUNT(*) AS total
         FROM nw_jobmela_candidate_apply app
         JOIN nw_jobmela_candidate_dtl can ON app.candidate_id = can.candidate_id
@@ -131,7 +149,64 @@ AND job.fklMelaId = ?
         checkCompanyStatus:`select * from nw_jobmela_company_dtl com
                         left join 
                         nw_jobmela_job_details job on com.sl_no = job.fkl_Company_slno
-                        where job.job_id=? And com.isVarified=1 `
+                        where job.job_id=? And com.isVarified=1 `,
+        melaJob:`SELECT 
+                entity.vsEntityName AS companyName,
+                jobmela.vsPostName AS jobName,
+                jobmela.pklJobId AS jobId,
+                jobmela.iVacancy AS vacancy,
+                qual.vsQualification AS minimumQualification,
+                jobmela.fklMinQalificationId AS qualificationId,
+                jobmela.vsSelectionProcedure AS selectionProcedure,
+                
+                COUNT(DISTINCT applicant.fklCandidateId) AS appliedCandidateCount,
+
+                entity.pklEntityId,
+                entity.fklOrganizationTypeId AS organizationTypeId,
+                orgType.vsOrganizationTypeName AS organizationTypeName,
+                emp.fklEmployerType AS empTypeId,
+                empType.vsEmployerType AS empTypeName,
+                jobmela.fklMelaId AS melaId
+
+            FROM nw_jobmela_job_dtl jobmela
+
+            LEFT JOIN nw_enms_entity entity 
+                ON jobmela.fklEmployerId = entity.pklEntityId
+
+            LEFT JOIN nw_mams_organization_type orgType 
+                ON entity.fklOrganizationTypeId = orgType.pklOrganizationTypeId
+
+            LEFT JOIN nw_loms_login login 
+                ON entity.fklLoginId = login.pklLoginId
+
+            LEFT JOIN nw_emms_employer_details emp 
+                ON entity.pklEntityId = emp.fklENtityId
+
+            LEFT JOIN nw_mams_employer_type empType 
+                ON emp.fklEmployerType = empType.pklEmployerId
+
+            LEFT JOIN nw_mams_qualification qual 
+                ON jobmela.fklMinQalificationId = qual.pklQualificationId
+
+            LEFT JOIN nw_jobmela_applicant_dtl applicant 
+                ON applicant.fklJobId = jobmela.pklJobId
+
+            WHERE jobmela.fklMelaId = ?
+
+            GROUP BY 
+                jobmela.pklJobId,
+                entity.vsEntityName,
+                jobmela.vsPostName,
+                jobmela.iVacancy,
+                qual.vsQualification,
+                jobmela.fklMinQalificationId,
+                jobmela.vsSelectionProcedure,
+                entity.pklEntityId,
+                entity.fklOrganizationTypeId,
+                orgType.vsOrganizationTypeName,
+                emp.fklEmployerType,
+                empType.vsEmployerType,
+                jobmela.fklMelaId `
         
 }
 

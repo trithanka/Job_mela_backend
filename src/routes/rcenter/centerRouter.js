@@ -1,5 +1,5 @@
 const express=require("express");
-const { loginUser, allCandidate, jobDetail, jobApply, allCompany } = require("../../controllers/cCenter/centerController");
+const { loginUser, allCandidate, jobDetail, jobApply, allCompany, allJob } = require("../../controllers/cCenter/centerController");
 // const { verifyToken } = require("../../../utils/jwtValidator");
 
 const router=express.Router();
@@ -17,6 +17,9 @@ router.post("/company",allCompany)
 
 //get job detail by candidateId
 router.post("/eligibleJob",jobDetail)
+
+//all job
+router.post("/allJob",allJob)
 
 //apply job
 router.post("/jobApply",jobApply)

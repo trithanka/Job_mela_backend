@@ -64,16 +64,17 @@ const allCompany=async(req,res)=>{
         return res.status(500).json({ status: false, message: "Error connecting to db", error: error.message });
     }
     try {
-        const melaCompany= await connection.query(mysqlDB, uQuery.melaCompany, [req.user.mela]);
+        const {melaId}=req.body
+        const melaCompany= await connection.query(mysqlDB, uQuery.melaCompany, [melaId]);
         if(melaCompany.length==0){
             return res.status(200).json({status:false,message:"No Company Registered"})
         }
-        const melaComJob=await connection.query(mysqlDB, uQuery.melaCompanyjob, [req.user.mela]);
+        // const melaComJob=await connection.query(mysqlDB, uQuery.melaCompanyjob, [melaId]);
         res.status(200).json({
             status:true,
             message:"success",
             company:melaCompany,
-            jobs:melaComJob
+            // jobs:melaComJob
         })
     } catch (error) {
         return res.status(500).json({ status: false, message: "Internal Server Error contact", error: error.message });
@@ -252,4 +253,34 @@ const jobApply=async(req,res)=>{
         if (mysqlDB) mysqlDB.release();
     }
 }
-module.exports={loginUser,allCandidate,jobDetail,jobApply,allCompany}
+
+//all job
+const allJob=async(req,res)=>{
+    let mysqlDB;
+    try {
+        mysqlDB = await connection.getDB();
+        if (!mysqlDB) {
+            return res.status(500).json({ status: false, message: "Error connecting to db" });
+        }
+    } catch (error) {
+        return res.status(500).json({ status: false, message: "Error connecting to db", error: error.message });
+    }
+    try {
+        const {melaId}=req.body
+        const melaJob= await connection.query(mysqlDB, uQuery.melaJob, [melaId]);
+        if(melaJob.length==0){
+            return res.status(200).json({status:false,message:"No Job Available"})
+        }
+        res.status(200).json({
+            status:true,
+            message:"success",
+            job:melaJob,
+        })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ status: false, message: "Internal Server Error contact", error: error.message });
+    }finally {
+        if (mysqlDB) mysqlDB.release();
+    }
+}
+module.exports={loginUser,allCandidate,jobDetail,jobApply,allCompany,allJob}

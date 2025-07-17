@@ -1,4 +1,20 @@
 const uQuery={
+    lastInterviewTime:`select 
+            MAX(applicant.dtInterviewDateTime) as lastInterviewTime
+        from nw_jobmela_applicant_dtl applicant
+        where applicant.fklJobId =? `,
+    availableJob:`select 
+            job.pkljobId as jobId ,
+            job.vsPostName,
+            job.fklEmployerId as companyId,
+            jobday.dtParticipationDate as participationDays,
+            job.dtInterviewStartTime as interviewStartTime,
+            job.iInterviewDurationMin as interviewDurationMin,
+            job.dtInterviewEndTime as interviewEndTime
+        from nw_jobmela_job_dtl job
+        left join nw_jobmela_company_day_map jobday on job.pklJobId=jobday.fklJobId
+        left join nw_jobmela_applicant_dtl applicant on applicant.fklJobId =job.pklJobId
+        where job.fklMelaId = ? and applicant.fklCandidateId = ? and jobday.dtParticipationDate=? and applicant.dtCheckInTime is null;`,
     getAdmin:`select * from nw_jobmela_admin where username=? and bActive=1`,
     appliedCan:`
     SELECT 
@@ -44,7 +60,7 @@ const uQuery={
     qual.vsQualification AS qualification,
     contact.vsPrimaryMobileNo AS mobile,
     basic.pklCandidateId AS candidateId,
-    job.fklMelaId AS fklmela_no,
+    job.fklMelaId AS melaId,
     mela.vsVenueName as melaName
 FROM nw_jobmela_applicant_dtl applicant
 INNER JOIN nw_jobmela_job_dtl job ON applicant.fklJobId = job.pklJobId

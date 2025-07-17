@@ -243,7 +243,8 @@ const addCompany = async (req, res) => {
       }
   
       await connection.beginTransaction(mysqlDB);
-  
+      console.log(req.body.jobList);
+      return 
       const { fklEmployerId,melaID, jobList } = req.body;
       if (!fklEmployerId || !melaID || !Array.isArray(jobList) || jobList.length === 0) {
         await connection.rollback(mysqlDB);

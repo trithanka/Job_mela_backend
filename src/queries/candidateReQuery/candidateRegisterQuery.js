@@ -371,8 +371,33 @@ JOIN
 JOIN 
     nw_mams_qualification q ON c.fklqualificationId = q.pklQualificationId
 WHERE
-    cs.final_selection = '1'; -- Assuming 'Yes' indicates a placed candidate
-`
+    cs.final_selection = '1'; -- Assuming 'Yes' indicates a placed candidate `,
+    getJob:`SELECT 
+            job.pklJobId AS job_id,
+            job.vsPostName AS post_name,
+            job.iVacancy AS vacancy,
+            job.vsSelectionProcedure,
+            job.fklMelaId AS fklmela_no,
+            job.fklMinQalificationId AS min_fklqualificationId,
+
+            entity.vsEntityName AS company_name,
+            entity.pklEntityId AS fklEmployerId,
+            emp.vsArea AS companyAddress,
+            emp.vsPINCode AS companyPinCode,
+            emp.dtModifiedDate AS createdAt,
+            qual.vsQualification,
+            applicant.fklCandidateId AS candidateId,
+            basic.vsCertName as candidateName
+
+            FROM nw_jobmela_applicant_dtl applicant
+
+            INNER JOIN nw_jobmela_job_dtl job ON applicant.fklJobId = job.pklJobId
+            LEFT JOIN nw_enms_entity entity ON job.fklEmployerId = entity.pklEntityId
+            LEFT JOIN nw_emms_employer_details emp ON emp.fklENtityId = entity.pklEntityId
+            LEFT JOIN nw_mams_qualification qual ON qual.pklQualificationId = job.fklMinQalificationId
+            left join nw_candidate_basic_dtl basic on applicant.fklCandidateId = basic.pklCandidateId
+            WHERE applicant.fklCandidateId = ?
+            AND job.fklMelaId = ? `
 }
 
 

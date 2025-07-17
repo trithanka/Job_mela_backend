@@ -1065,6 +1065,49 @@ const getAsdmCandidate = async (req, res) => {
   }
 };
 
+
+//get job by mela id and candidate id
+const getJob = async (req, res) => {
+  let mysqlDB;
+  try {
+    mysqlDB = await connection.getDB();
+    if (!mysqlDB) {
+      return res
+        .status(500)
+        .json({ status: false, message: "Error connecting to db" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({
+        status: false,
+        message: "Error connecting to db",
+        error: error.message,
+      });
+  }
+  const {melaId,candidateId} = req.body;
+  try {
+    let jobData;
+    jobData = await connection.query(mysqlDB, Query.getJob, [candidateId,melaId]);
+    if (jobData.length === 0) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Candidate not found" });
+      }
+
+    res.status(200).json({ status: true, data: jobData });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        status: false,
+        message: "Internal Server Error",
+        error: error.message,
+      });
+  } finally {
+    if (mysqlDB) mysqlDB.release();
+  }
+};
 module.exports = {
   registerCanditate,
   getByNumber,
@@ -1075,4 +1118,5 @@ module.exports = {
   appliedJob,
   portalCan,
   getAsdmCandidate,
+  getJob
 };

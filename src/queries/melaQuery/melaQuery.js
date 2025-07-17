@@ -1,7 +1,14 @@
 const QueryM={
     addMela: `INSERT INTO nw_jobmela_mela_dtl (venue_name, address, start_date, end_date, is_active) VALUES (?, ?, ?, ?, ?)`,
 
-    getMelas: `SELECT * FROM nw_jobmela_mela_dtl where 1=1 and pklMelaId = ? `,
+    getMelas: `SELECT 
+            mela.*, 
+            COUNT(applicant.pklApplicantId) AS totalParticipent 
+          FROM nw_jobmela_mela_dtl mela
+          LEFT JOIN nw_jobmela_applicant_dtl applicant 
+            ON mela.pklMelaId = applicant.fklMelaId
+          WHERE mela.pklMelaId = ?
+          GROUP BY mela.pklMelaId `,
 
     getAllMelas: `SELECT * FROM nw_jobmela_mela_dtl where 1=1 and bActive = 1`,
 
@@ -38,12 +45,14 @@ jobDetails: `SELECT
   job.fklMelaId AS fklmela_no,
   job.fklMinQalificationId as min_fklqualificationId,
   mela.vsVenueName,
-   qual.vsQualification,
+  qual.vsQualification,
   entity.vsEntityName AS company_name,
   entity.pklEntityId AS fklEmployerId,
   emp.vsArea AS companyAddress,
   emp.vsPINCode AS companyPinCode,
-  emp.dtModifiedDate AS createdAt
+  emp.dtModifiedDate AS createdAt,
+  pd.participation_dates,
+  COUNT(DISTINCT applicant.pklApplicantId) AS total_applicants
 
 FROM nw_jobmela_job_dtl job
 
@@ -55,55 +64,40 @@ LEFT JOIN nw_emms_employer_details emp
 
 LEFT JOIN nw_mams_qualification qual 
   ON qual.pklQualificationId = job.fklMinQalificationId
-left join nw_jobmela_mela_dtl mela on job.fklMelaId = mela.pklMelaId
 
-WHERE job.fklMelaId = ?;`,
-//     candidateDetails: `SELECT 
-//   c.*, 
-//   m.vsVenueName , 
-//   emp.vsDescription AS comDesc,
-//   job.post_name, 
-//   job.job_id, 
-//   job.vacancy,
-//   job.vsSelectionProcedure, 
-//   qual.vsQualification,
-//   job.min_fklqualificationId,
-//   m.vsDistrict AS district,
-//   m.dtStartDate AS start_date,
-//   m.dtEndDate AS end_date,
-//   applicant.fklCandidateId as candidateId,
-//   -- 1. Applied Flag
-//   CASE 
-//     WHEN applicant.pklApplicantId IS NOT NULL THEN 1
-//     ELSE 0
-//   END AS isApplied,
+LEFT JOIN nw_jobmela_mela_dtl mela 
+  ON job.fklMelaId = mela.pklMelaId
 
-//   -- 2. Eligibility Flag
-//   CASE 
-//     WHEN job.min_fklqualificationId IS NULL THEN 1
-//     WHEN job.min_fklqualificationId <= cand_qual.fklQualificationId THEN 1
-//     ELSE 0
-//   END AS isEligible
+-- ✅ Subquery joined here to avoid duplicate dates
+LEFT JOIN (
+  SELECT 
+    fklJobID, 
+    GROUP_CONCAT(DISTINCT DATE_FORMAT(dtParticipationDate, '%Y-%m-%d') ORDER BY dtParticipationDate SEPARATOR ', ') AS participation_dates
+  FROM nw_jobmela_company_day_map
+  GROUP BY fklJobID
+) pd ON pd.fklJobID = job.pklJobId
 
-// FROM ds.nw_jobmela_company_dtl c
-// LEFT JOIN ds.nw_jobmela_mela_dtl m 
-//   ON c.fklmela_no = m.pklMelaId
-// LEFT JOIN nw_jpms_employers emp 
-//   ON c.fklEmployerId = emp.pklEmployerId
-// LEFT JOIN nw_jobmela_job_details job 
-//   ON c.sl_no = job.fkl_Company_slno
-// LEFT JOIN nw_mams_qualification qual 
-//   ON qual.pklQualificationId = job.min_fklqualificationId
-// LEFT JOIN nw_jobmela_applicant_dtl applicant 
-//   ON job.job_id = applicant.fklJobId 
-//  AND applicant.fklCandidateId = ?
-// LEFT JOIN ds.nw_candidate_qualification_dtl cand_qual 
-//   ON cand_qual.fklCandidateId = ?
-// LEFT JOIN ds.nw_candidate_basic_dtl cand_basic 
-//   ON cand_basic.pklCandidateId = cand_qual.fklCandidateId
+LEFT JOIN nw_jobmela_applicant_dtl applicant 
+  ON job.pklJobId = applicant.fklJobId
 
-// WHERE c.fklmela_no = ?;
-// `,
+WHERE job.fklMelaId = ?	
+
+GROUP BY 
+  job.pklJobId,
+  job.vsPostName,
+  job.iVacancy,
+  job.vsSelectionProcedure,
+  job.fklMelaId,
+  job.fklMinQalificationId,
+  mela.vsVenueName,
+  qual.vsQualification,
+  entity.vsEntityName,
+  entity.pklEntityId,
+  emp.vsArea,
+  emp.vsPINCode,
+  emp.dtModifiedDate,
+  pd.participation_dates;
+`,
 candidateDetails: `SELECT 
   job.pklJobId AS job_id,
   job.vsPostName AS post_name,
@@ -120,6 +114,8 @@ candidateDetails: `SELECT
 
   qual.vsQualification,
   applicant.fklCandidateId AS candidateId,
+  pd.participation_dates,
+   COUNT(DISTINCT applicant.pklApplicantId) AS total_applicants,
 
   -- 1. Applied Flag
   CASE 
@@ -154,6 +150,14 @@ LEFT JOIN ds.nw_candidate_qualification_dtl cand_qual
 
 LEFT JOIN ds.nw_candidate_basic_dtl cand_basic 
   ON cand_basic.pklCandidateId = cand_qual.fklCandidateId
+
+  LEFT JOIN (
+  SELECT 
+    fklJobID, 
+    GROUP_CONCAT(DISTINCT DATE_FORMAT(dtParticipationDate, '%Y-%m-%d') ORDER BY dtParticipationDate SEPARATOR ', ') AS participation_dates
+  FROM nw_jobmela_company_day_map
+  GROUP BY fklJobID
+) pd ON pd.fklJobID = job.pklJobId
 
 WHERE job.fklMelaId = ?;`
 }

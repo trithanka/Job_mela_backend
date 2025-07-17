@@ -1,5 +1,5 @@
 const express=require("express");
-const { registerCanditate, getByNumber, updateCandidate, getAllCandidate, master, appliedJob,portalCan,getAsdmCandidate} = require("../../controllers/cCandidate/candidateController");
+const { registerCanditate, getByNumber, updateCandidate, getAllCandidate, master, appliedJob,portalCan,getAsdmCandidate,getJob} = require("../../controllers/cCandidate/candidateController");
 const registerValidator = require("../../validator/candidateRegisterValidator/candidateRegisterValidator");
 const updateCandidateValidator = require("../../validator/candidateRegisterValidator/updateCandidateValidator");
 const {verifyToken,authorizeRole} = require("../../../utils/jwtValidator");
@@ -35,6 +35,9 @@ router.get("/:contactNumber",getByNumber)
 
 //update details.
 router.post("/update/:contactNumber",updateCandidate)
+
+//get job by mela id and candidate id
+router.post("/job",getJob)
 
 
 module.exports=router

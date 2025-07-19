@@ -16,7 +16,7 @@ router.post("/add",addCompany)
 //update company
 router.post("/update",updateCompany)
 
-//get all company 
+//get all company
 router.post("/",getAllCompanies)
 
 //jobportal 

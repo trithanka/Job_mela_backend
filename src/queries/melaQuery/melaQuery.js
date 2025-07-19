@@ -10,7 +10,11 @@ const QueryM={
           WHERE mela.pklMelaId = ?
           GROUP BY mela.pklMelaId `,
 
-    getAllMelas: `SELECT * FROM nw_jobmela_mela_dtl where 1=1 and bActive = 1`,
+    getAllMelas: `SELECT mela.* ,
+          count(distinct job.fklEmployerId) as companyCount
+          FROM nw_jobmela_mela_dtl mela 
+          left join nw_jobmela_job_dtl job on job.fklMelaId=mela.pklMelaId
+          where 1=1 and mela.bActive = 1 `,
 
     companyQ:`SELECT 
     c.company_name,

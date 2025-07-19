@@ -53,24 +53,24 @@ const applyForJobs = async (candidateId, qualification, res) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const verifyPassword = async function (password, hashedPassword) {
     return new Promise((resolve, reject) => {
-      let salt = process.env.SALT;
-      crypto.pbkdf2(password, salt, 10000, 64, "sha256", (err, derivedKey) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(derivedKey.toString("hex") === hashedPassword);
-        }
-      });
+        let salt = process.env.SALT;
+        crypto.pbkdf2(password, salt, 10000, 64, "sha256", (err, derivedKey) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(derivedKey.toString("hex") === hashedPassword);
+            }
+        });
     });
-  };
+};
 //login
-const loginCompany= async(req, res)=>{
+const loginCompany = async (req, res) => {
     let mysqlDB = await connection.getDB();
     if (!mysqlDB) {
         throw new Error("Error connecting to db");
     }
-    const {phone_no,password}=req.body;
-    if(! phone_no || !password){
+    const { phone_no, password } = req.body;
+    if (!phone_no || !password) {
         return res.status(200).send({
             status: false,
             message: "Enter contact number and password"
@@ -105,8 +105,8 @@ const loginCompany= async(req, res)=>{
         }
 
         //generate token
-        
-        const token = jwt.sign({ registration_no:com.registration_no }, process.env.SECERET_TOKEN, { expiresIn: '30d' });
+
+        const token = jwt.sign({ registration_no: com.registration_no }, process.env.SECERET_TOKEN, { expiresIn: '30d' });
 
         res.status(200).send({
             status: true,
@@ -119,7 +119,7 @@ const loginCompany= async(req, res)=>{
             status: false,
             message: "Internal Server Error while logging in admin"
         });
-    }finally {
+    } finally {
         if (mysqlDB) mysqlDB.release();
     }
 }
@@ -206,9 +206,9 @@ const loginCompany= async(req, res)=>{
 //         //     FROM ds.nw_jobmela_candidate_dtl
 //         //     WHERE fklmela_no = ?;
 //         // `;
-        
+
 //         // const candidates = await connection.query(mysqlDB, applyCandidatesQuery, [fklmela_no]);
-        
+
 //         // if (candidates.length > 0) {
 //         //     for (const candidate of candidates) {
 //         //         await applyForJobs(candidate.candidate_id, candidate.fklqualificationId, res);
@@ -237,80 +237,80 @@ const loginCompany= async(req, res)=>{
 const addCompany = async (req, res) => {
     let mysqlDB;
     try {
-      mysqlDB = await connection.getDB();
-      if (!mysqlDB) {
-        return res.status(500).json({ status: false, message: "Error connecting to db" });
-      }
-  
-      await connection.beginTransaction(mysqlDB);
-      console.log(req.body.jobList);
-      return 
-      const { fklEmployerId,melaID, jobList } = req.body;
-      if (!fklEmployerId || !melaID || !Array.isArray(jobList) || jobList.length === 0) {
-        await connection.rollback(mysqlDB);
-        return res.status(400).json({ status: false, message: "fklEmployerId, melaID and jobList are required" });
-      }
-      let insertedJobIds = [];
-      for (const job of jobList) {
-        const {
-          fklMinQalificationId,
-          iVacancy,
-          vsPostName,
-          iInterviewDurationMin,
-          dtInterviewStartTime,
-          dtInterviewEndTime,
-          participationDates,
-          vsSelectionProcedure
-        } = job;
-  
-        if (
-          !fklMinQalificationId ||
-          !iVacancy ||
-          !vsPostName ||
-          !iInterviewDurationMin ||
-          !dtInterviewStartTime ||
-          !dtInterviewEndTime ||
-          !Array.isArray(participationDates) ||
-          participationDates.length === 0 ||
-          !vsSelectionProcedure
-        ) {
-          throw new Error("Missing required job fields or participationDates");
+        mysqlDB = await connection.getDB();
+        if (!mysqlDB) {
+            return res.status(500).json({ status: false, message: "Error connecting to db" });
         }
-  
-        // Insert into nw_jobmela_job_dtl
-        //new line
-        const jobResult = await connection.query(mysqlDB, cQuery.insertJobQuery, [
-          fklEmployerId,
-          iVacancy,
-          vsPostName,
-          fklMinQalificationId,
-          iInterviewDurationMin,
-          dtInterviewStartTime,
-          dtInterviewEndTime,
-          vsSelectionProcedure,
-          melaID
-        ]);
-        const pklJobId = jobResult.insertId;
-        insertedJobIds.push(pklJobId);
-        // Insert participation dates
-        for (const date of participationDates) {
-          await connection.query(mysqlDB, cQuery.insertParticipationQuery, [pklJobId, date]);
+
+        await connection.beginTransaction(mysqlDB);
+        console.log(req.body.jobList);
+        return
+        const { fklEmployerId, melaID, jobList } = req.body;
+        if (!fklEmployerId || !melaID || !Array.isArray(jobList) || jobList.length === 0) {
+            await connection.rollback(mysqlDB);
+            return res.status(400).json({ status: false, message: "fklEmployerId, melaID and jobList are required" });
         }
-      }
-  
-      await connection.commit(mysqlDB);
-      return res.status(201).json({ status: true, message: "Company jobs and participation dates added successfully", insertedJobIds });
+        let insertedJobIds = [];
+        for (const job of jobList) {
+            const {
+                fklMinQalificationId,
+                iVacancy,
+                vsPostName,
+                iInterviewDurationMin,
+                dtInterviewStartTime,
+                dtInterviewEndTime,
+                participationDates,
+                vsSelectionProcedure
+            } = job;
+
+            if (
+                !fklMinQalificationId ||
+                !iVacancy ||
+                !vsPostName ||
+                !iInterviewDurationMin ||
+                !dtInterviewStartTime ||
+                !dtInterviewEndTime ||
+                !Array.isArray(participationDates) ||
+                participationDates.length === 0 ||
+                !vsSelectionProcedure
+            ) {
+                throw new Error("Missing required job fields or participationDates");
+            }
+
+            // Insert into nw_jobmela_job_dtl
+            //new line
+            const jobResult = await connection.query(mysqlDB, cQuery.insertJobQuery, [
+                fklEmployerId,
+                iVacancy,
+                vsPostName,
+                fklMinQalificationId,
+                iInterviewDurationMin,
+                dtInterviewStartTime,
+                dtInterviewEndTime,
+                vsSelectionProcedure,
+                melaID
+            ]);
+            const pklJobId = jobResult.insertId;
+            insertedJobIds.push(pklJobId);
+            // Insert participation dates
+            for (const date of participationDates) {
+                await connection.query(mysqlDB, cQuery.insertParticipationQuery, [pklJobId, date]);
+            }
+        }
+
+        await connection.commit(mysqlDB);
+        return res.status(201).json({ status: true, message: "Company jobs and participation dates added successfully", insertedJobIds });
     } catch (error) {
-      if (mysqlDB) {
-        try { await connection.rollback(mysqlDB); } catch (e) {}
-      }
-      return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
+        if (mysqlDB) {
+            try { await connection.rollback(mysqlDB); } catch (e) { }
+        }
+        return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
     } finally {
-      if (mysqlDB) mysqlDB.release();
+        if (mysqlDB) mysqlDB.release();
     }
-  };
+};
 //update company
-const updateCompany=async(req,res)=>{
+const updateCompany = async (req, res) => {
     let mysqlDB;
     try {
         mysqlDB = await connection.getDB();
@@ -318,14 +318,14 @@ const updateCompany=async(req,res)=>{
             throw new Error("Error connecting to db");
         }
 
-        const { company_name, registration_no, phone_no, email, address, jobs, fklmela_no} = req.body;
+        const { company_name, registration_no, phone_no, email, address, jobs, fklmela_no } = req.body;
 
         // Start a transaction
         await connection.beginTransaction(mysqlDB);
 
 
         // Update company data
-        await connection.query(mysqlDB, cQuery.updateCompany, [company_name, phone_no, email, address,fklmela_no, registration_no]);
+        await connection.query(mysqlDB, cQuery.updateCompany, [company_name, phone_no, email, address, fklmela_no, registration_no]);
 
         // Delete existing job details for the company
         await connection.query(mysqlDB, cQuery.deleteJobsByCompany, [registration_no]);
@@ -350,8 +350,8 @@ const updateCompany=async(req,res)=>{
             phone_no: rows[0].phone_no,
             email: rows[0].email,
             address: rows[0].address,
-            fklmela_no:rows[0].fklmela_no,
-            venue_name:rows[0].venue_name,
+            fklmela_no: rows[0].fklmela_no,
+            venue_name: rows[0].venue_name,
             jobs: rows.filter(row => row.job_id).map(row => ({
                 job_id: row.job_id,
                 min_qualification: row.min_qualification,
@@ -366,9 +366,9 @@ const updateCompany=async(req,res)=>{
             FROM ds.nw_jobmela_candidate_dtl
             WHERE fklmela_no = ?;
         `;
-        
+
         const candidates = await connection.query(mysqlDB, applyCandidatesQuery, [fklmela_no]);
-        
+
         if (candidates.length > 0) {
             for (const candidate of candidates) {
                 await applyForJobs(candidate.candidate_id, candidate.fklqualificationId, res);
@@ -396,8 +396,8 @@ const updateCompany=async(req,res)=>{
     }
 }
 
-const getCompany= async(req,res)=>{
-    
+const getCompany = async (req, res) => {
+
     let mysqlDB;
     try {
         mysqlDB = await connection.getDB();
@@ -407,29 +407,30 @@ const getCompany= async(req,res)=>{
     } catch (error) {
         return res.status(500).json({ status: false, message: "Error connecting to db", error: error.message });
     }
-    const{phone_no}=req.body
+    const { phone_no } = req.body
     try {
-        
-    
-    const company=await connection.query(mysqlDB, cQuery.getCompany, [phone_no]);
 
-    if(company.length==0){
-        return res.status(200).json({
-            status:false,
-            message:"no company found"
-        })
-    }else{
-        return res.status(200).json({
-            status:true,
-            message: "Success",
-            data:company
-        })
-    }} catch (error) {
+
+        const company = await connection.query(mysqlDB, cQuery.getCompany, [phone_no]);
+
+        if (company.length == 0) {
+            return res.status(200).json({
+                status: false,
+                message: "no company found"
+            })
+        } else {
+            return res.status(200).json({
+                status: true,
+                message: "Success",
+                data: company
+            })
+        }
+    } catch (error) {
         return res.status(400).json({
-            status:false,
-            message:error
+            status: false,
+            message: error
         })
-    }finally {
+    } finally {
         if (mysqlDB) mysqlDB.release();
     }
 
@@ -440,70 +441,51 @@ const getAllCompanies = async (req, res) => {
     if (!mysqlDB) {
         throw new Error("Error connecting to db");
     }
-    const {phone_no,district,qualification_id,fklmela_no,interview_mode}=req.body
+    const { phone_no, district, qualification_id, fklmela_no, interview_mode } = req.body
     try {
-        let companyData;
         let jobs;
-        let comData;
         let rows;
-        if(phone_no){
-            comData = await connection.query(mysqlDB, cQuery.getJobportal,[phone_no]);
-            jobs = await connection.query(mysqlDB, cQuery.jobDetails,[phone_no]);
-            // const comData = await connection.query(mysqlDB, cQuery.getCompanies,[phone_no]);
-            if (!comData || comData.length === 0) {
-                return res.status(404).json({ status: false, message: "No company found with provided phone number" });
-            }
-            // companyData = {
-            //     company_name: comData[0].company_name,
-            //     registration_no: comData[0].registration_no,
-            //     phone_no: comData[0].phone_no,
-            //     email: comData[0].email,
-            //     address: comData[0].address,
-            //     fklmela_no:comData[0].fklmela_no,
-            //     venue_name:comData[0].venue_name,
-            //     jobs: comData.filter(row => row.job_id).map(row => ({
-            //         job_id: row.job_id,
-            //         min_qualification: row.min_qualification,
-            //         min_fklqualificationId: row.min_fklqualificationId,
-            //         vacancy: row.vacancy,
-            //         post_name: row.post_name
-            //     }))
-            // };
-        }else{
-            let query=cQuery.getAllCompanies
-            let params=[]
-            //filter by district
-            if(district){
-                query+=` and m.district = ?`;
-                params.push(district)
-            }
-            //filter by qualification
-            if(qualification_id){
-                query+=` and job.min_fklqualificationId = ?`;
-                params.push(qualification_id)
-            }
-            //filter by interview mode
-            if(interview_mode){
-                query+=` and job.vsSelectionProcedure = ?`;
-                params.push(interview_mode)
-            }
-            //filter by fklmela_no
-            if(fklmela_no){
-                query+=` and c.fklmela_no = ?`;
-                params.push(fklmela_no)
-            }
-            rows = await connection.query(mysqlDB, query,params);
-            if (!rows || rows.length === 0) {
-                return res.status(404).json({ status: false, message: "No companies found" });
-            }
+
+        let query = cQuery.getAllCompanies
+        let params = []
+        //filter by district
+        // if(district){
+        //     query+=` and m.district = ?`;
+        //     params.push(district)
+        // }
+        //filter by qualification
+        if (qualification_id) {
+            query += ` and jobmela.fklMinQalificationId = ?`;
+            params.push(qualification_id)
         }
-         
+        //filter by interview mode
+        if (interview_mode) {
+            query += ` and jobmela.vsSelectionProcedure = ?`;
+            params.push(interview_mode)
+        }
+        //filter by fklmela_no
+        if (fklmela_no) {
+            query += ` and jobmela.fklMelaId = ?`;
+            params.push(fklmela_no)
+        }
+        //filter by mobile number
+        if (phone_no) {
+            query += ` and entity.vsMobile1 = ?`;
+            params.push(phone_no)
+            jobs = await connection.query(mysqlDB, cQuery.jobDetails,[phone_no]);
+        }
+        query += ` group by entity.pklEntityId`;
+        rows = await connection.query(mysqlDB, query, params);
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ status: false, message: "No companies found" });
+        }
+
+
         res.status(200).send({
             status: true,
             message: "Companies retrieved successfully",
             data: rows,
-            company:comData,
-            jobs:jobs
+            jobs: jobs
         });
     } catch (error) {
         console.error(error);
@@ -511,10 +493,10 @@ const getAllCompanies = async (req, res) => {
             status: false,
             message: "Internal Server Error while retrieving companies"
         });
-    }finally {
+    } finally {
         if (mysqlDB) mysqlDB.release();
     }
 };
 
 
-module.exports = { addCompany, getAllCompanies, updateCompany, loginCompany ,getCompany}
+module.exports = { addCompany, getAllCompanies, updateCompany, loginCompany, getCompany }

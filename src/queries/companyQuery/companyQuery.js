@@ -51,14 +51,35 @@ where vsPhoneNumber=? and isVarified=1`,
 
 
     getAllCompanies: `
-        SELECT c.*,m.vsVenueName as venue_name, emp.vsDescription as comDesc ,job.post_name, job.job_id, job.vacancy ,job.vsSelectionProcedure, qual.vsQualification,job.min_fklqualificationId
-        ,m.vsDistrict as district,m.dtStartDate as start_date,m.dtEndDate as end_date
-    FROM ds.nw_jobmela_company_dtl c
-	left join ds.nw_jobmela_mela_dtl m on c.fklmela_no=m.pklMelaId
-    left join nw_jpms_employers emp on c.fklEmployerId = emp.pklEmployerId
-    left join nw_jobmela_job_details job on c.sl_no = job.fkl_Company_slno
-    left join nw_mams_qualification qual on qual.pklQualificationId = job.min_fklqualificationId
-    where 1=1 
+        SELECT
+            entity.pklEntityId,
+            ANY_VALUE(entity.vsEntityName) AS companyName,
+            ANY_VALUE(entity.fklRoleId) AS roleId,
+            ANY_VALUE(entity.vsEmail1) AS companyEmail,
+            ANY_VALUE(entity.vsMobile1) AS companyMobile,
+            ANY_VALUE(entity.fklOrganizationTypeId) AS organizationTypeId,
+            ANY_VALUE(orgType.vsOrganizationTypeName) AS organizationTypeName,
+            ANY_VALUE(login.vsLoginName) AS userName,
+            ANY_VALUE(emp.fklEmployerType) AS empTypeId,
+            ANY_VALUE(empType.vsEmployerType) AS empTypeName,
+            ANY_VALUE(emp.vsArea) AS companyAddress,
+            ANY_VALUE(emp.vsPINCode) AS companyPinCode,
+            ANY_VALUE(emp.dtModifiedDate) AS createdAt,
+            ANY_VALUE(emp.vsOrganisationDescription) AS comDesc,
+            MAX(jobmela.fklMelaid) AS latestMelaId,
+            count(distinct jobmela.fklMelaId) as melaCount,
+            GROUP_CONCAT(DISTINCT jobmela.vsSelectionProcedure) AS selectionProcedure
+    FROM nw_enms_entity entity 
+            LEFT JOIN nw_mams_organization_type orgType 
+                ON entity.fklOrganizationTypeId = orgType.pklOrganizationTypeId
+            LEFT JOIN nw_loms_login login 
+                ON entity.fklLoginId = login.pklLoginId
+            LEFT JOIN nw_emms_employer_details emp 
+                ON entity.pklEntityId = emp.fklENtityId
+            LEFT JOIN nw_mams_employer_type empType 
+                ON emp.fklEmployerType = empType.pklEmployerId
+            INNER JOIN nw_jobmela_job_dtl jobmela 
+                ON entity.pklEntityId = jobmela.fklEmployerId
     `,
     getJobportal:`
     select 
@@ -85,55 +106,65 @@ where vsPhoneNumber=? and isVarified=1`,
     where com.vsPhoneNumber=?
     `,
     jobDetails:`
-    SELECT
-    c.fklmela_no,
-    mela.vsVenueName as venue_name,
-    mela.dtStartDate as start_date,
-    mela.dtEndDate as end_date,
-    GROUP_CONCAT(
-        CONCAT(
-            '{',
-            '"job_id":', j.job_id,
-            ',"min_qualification":"', mas.vsQualification,
-            '","min_fklqualificationId":', j.min_fklqualificationId,
-            ',"vacancy":', j.vacancy,
-            ',"post_name":"', j.post_name,
-            '"}'
-        )
-        ORDER BY j.job_id SEPARATOR ','
-    ) AS job
-FROM 
-    nw_jobmela_company_dtl c
-LEFT JOIN 
-    nw_jobmela_job_details j ON c.sl_no = j.fkl_Company_slno
-JOIN
-    nw_mams_qualification mas ON j.min_fklqualificationId = mas.pklQualificationId
-JOIN
-    nw_jobmela_mela_dtl mela ON c.fklmela_no = mela.pklMelaId
-WHERE 
-    c.phone_no = ?
-GROUP BY 
-    c.fklmela_no, mela.vsVenueName;
-    `,
-    // jobDetails:`
-    // select
-    // c.fklmela_no,
-    // j.job_id,
-    // mela.venue_name,
-    // mas.vsQualification as min_qualification,
-    // j.min_fklqualificationId,
-    // j.vacancy,
-    // j.post_name
-    // FROM 
-    //     nw_jobmela_company_dtl c
-    // LEFT JOIN 
-    //     nw_jobmela_job_details j ON c.sl_no = j.fkl_Company_slno
-    // join
-    //     nw_mams_qualification mas on j.min_fklqualificationId=mas.pklQualificationId
-	// join
-	// 	nw_jobmela_mela_dtl mela on c.fklmela_no=mela.sl_no
-    // WHERE c.phone_no=?
-    // `,
+                SELECT 
+            job.pklJobId AS job_id,
+            job.vsPostName AS post_name,
+            job.iVacancy AS vacancy,
+            job.vsSelectionProcedure,
+            job.fklMelaId AS fklmela_no,
+            job.fklMinQalificationId as min_fklqualificationId,
+            mela.vsVenueName,
+            qual.vsQualification,
+            entity.vsEntityName AS company_name,
+            entity.pklEntityId AS fklEmployerId,
+            emp.vsArea AS companyAddress,
+            emp.vsPINCode AS companyPinCode,
+            emp.dtModifiedDate AS createdAt,
+            pd.participation_dates,
+            COUNT(DISTINCT applicant.pklApplicantId) AS total_applicants
+
+            FROM nw_jobmela_job_dtl job
+
+            LEFT JOIN nw_enms_entity entity 
+            ON job.fklEmployerId = entity.pklEntityId
+
+            LEFT JOIN nw_emms_employer_details emp 
+            ON emp.fklENtityId = entity.pklEntityId
+
+            LEFT JOIN nw_mams_qualification qual 
+            ON qual.pklQualificationId = job.fklMinQalificationId
+
+            LEFT JOIN nw_jobmela_mela_dtl mela 
+            ON job.fklMelaId = mela.pklMelaId
+
+            -- ✅ Subquery joined here to avoid duplicate dates
+            LEFT JOIN (
+            SELECT 
+                fklJobID, 
+                GROUP_CONCAT(DISTINCT DATE_FORMAT(dtParticipationDate, '%Y-%m-%d') ORDER BY dtParticipationDate SEPARATOR ', ') AS participation_dates
+            FROM nw_jobmela_company_day_map
+            GROUP BY fklJobID
+            ) pd ON pd.fklJobID = job.pklJobId
+
+            LEFT JOIN nw_jobmela_applicant_dtl applicant 
+            ON job.pklJobId = applicant.fklJobId
+
+            WHERE entity.vsMobile1 = ?
+            GROUP BY 
+            job.pklJobId,
+            job.vsPostName,
+            job.iVacancy,
+            job.vsSelectionProcedure,
+            job.fklMelaId,
+            job.fklMinQalificationId,
+            mela.vsVenueName,
+            qual.vsQualification,
+            entity.vsEntityName,
+            entity.pklEntityId,
+            emp.vsArea,
+            emp.vsPINCode,
+            emp.dtModifiedDate,
+            pd.participation_dates `,
     getCompanies: `
         SELECT 
     c.company_name,

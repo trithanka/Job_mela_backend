@@ -52,7 +52,7 @@ const getMelas = async (req, res) => {
             query += ' and vsDistrict = ?';
             params.push(vsDistrict);
         }
-
+        query += 'group by mela.pklMelaId';
         const melaData = await connection.query(mysqlDB, query, params);
 
         res.status(200).json({ status: true, data: melaData });

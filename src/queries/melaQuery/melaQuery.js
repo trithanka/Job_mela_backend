@@ -163,7 +163,25 @@ LEFT JOIN ds.nw_candidate_basic_dtl cand_basic
   GROUP BY fklJobID
 ) pd ON pd.fklJobID = job.pklJobId
 
-WHERE job.fklMelaId = ?;`
+WHERE job.fklMelaId = ?
+GROUP BY
+  job.pklJobId,
+  job.vsPostName,
+  job.iVacancy,
+  job.vsSelectionProcedure,
+  job.fklMelaId,
+  job.fklMinQalificationId,
+  entity.vsEntityName,
+  entity.pklEntityId,
+  emp.vsArea,
+  emp.vsPINCode,
+  emp.dtModifiedDate,
+  qual.vsQualification,
+  applicant.fklCandidateId,
+  pd.participation_dates,
+  isApplied,
+  isEligible
+;`
 }
 
 module.exports=QueryM
